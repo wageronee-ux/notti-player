@@ -1,22 +1,27 @@
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis'
+
+const redis = Redis.fromEnv()
 
 export default async function handler(req, res) {
-    const { userId, track } = req.body;
+    // В Telegram Mini App ID пользователя передается во фронтенд, 
+    // оттуда мы шлем его в теле запроса (body) или в параметрах (query)
+    const userId = req.method === 'POST' ? req.body.userId : req.query.userId;
+
     if (!userId) return res.status(400).json({ error: 'User ID required' });
 
+    const key = `playlist:${userId}`;
+
     if (req.method === 'POST') {
-        // Добавляем трек в облако
-        const key = `playlist:${userId}`;
-        let playlist = await kv.get(key) || [];
+        const { track } = req.body;
+        // Получаем текущий список, добавляем новый трек и сохраняем
+        let playlist = await redis.get(key) || [];
         playlist.push(track);
-        await kv.set(key, playlist);
+        await redis.set(key, JSON.stringify(playlist));
         return res.status(200).json(playlist);
     } 
     
     if (req.method === 'GET') {
-        // Получаем плейлист
-        const { userId } = req.query;
-        const playlist = await kv.get(`playlist:${userId}`) || [];
+        const playlist = await redis.get(key) || [];
         return res.status(200).json(playlist);
     }
 }
