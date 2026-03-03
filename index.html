@@ -1,65 +1,270 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Notti Music Premium</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --accent: #1DB954; --bg: #000; --card: #121212; --gray: #b3b3b3; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body, html { 
+            background-color: #000 !important; 
+            margin: 0; padding: 0; 
+            color: #fff; font-family: -apple-system, sans-serif; 
+            height: 100vh; overflow: hidden;
+        }
+
+        /* ЭКРАН ВХОДА (ФИКС СЕРОГО ЭКРАНА) */
+        #auth-screen { 
+            position: fixed; inset: 0; background: #000; z-index: 10000; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; 
+        }
+        .auth-btn { background: #fff; color: #000; padding: 15px 40px; border-radius: 30px; border: none; font-weight: bold; font-size: 16px; margin-top: 20px; cursor: pointer; transition: 0.3s; }
+        .auth-btn:active { transform: scale(0.95); opacity: 0.8; }
+
+        .page { display: none; height: 100vh; padding: 20px 20px 180px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .page.active { display: block; }
+
+        /* NOTTI РАДИО */
+        .wave-card { width: 100%; height: 120px; background: linear-gradient(135deg, #1db954, #004d1a); border-radius: 20px; display: flex; align-items: center; padding: 20px; margin-bottom: 25px; cursor: pointer; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+        .wave-card i { font-size: 40px; color: #fff; margin-right: 15px; z-index: 2; }
+        .wave-bg { position: absolute; right: -10px; bottom: -20px; font-size: 120px; color: rgba(255,255,255,0.05); transform: rotate(-10deg); }
+
+        /* СКРОЛЛ АРТИСТОВ */
+        .artists-scroll { display: flex; gap: 15px; overflow-x: auto; padding: 10px 0; scrollbar-width: none; }
+        .artists-scroll::-webkit-scrollbar { display: none; }
+        .artist-item { min-width: 85px; text-align: center; }
+        .artist-item img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid #222; }
+        .artist-name { font-size: 11px; margin-top: 5px; color: var(--gray); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* СЕТКА ТРЕКОВ */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .track-card { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid #222; position: relative; animation: fadeIn 0.5s ease; }
+        .track-card img { width: 100%; aspect-ratio: 1/1; object-fit: cover; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ПЛЕЕРЫ */
+        #full-player { position: fixed; top: 100%; left: 0; width: 100%; height: 100%; background: #000; z-index: 9000; transition: 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); padding: 50px 25px; display: flex; flex-direction: column; }
+        #full-player.open { top: 0; }
+        .fp-img { width: 100%; aspect-ratio: 1/1; border-radius: 20px; margin: 30px 0; object-fit: cover; box-shadow: 0 10px 50px rgba(0,0,0,0.8); }
+
+        #mini-player { position: fixed; bottom: 95px; left: 10px; right: 10px; height: 60px; background: rgba(30,30,30,0.95); backdrop-filter: blur(10px); border-radius: 12px; display: none; align-items: center; padding: 0 12px; z-index: 8000; border: 1px solid #333; }
+        #mini-player img { width: 42px; height: 42px; border-radius: 6px; margin-right: 12px; }
+
+        /* НАВИГАЦИЯ */
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: space-around; padding: 15px 0 35px; z-index: 7000; backdrop-filter: blur(20px); border-top: 0.5px solid #222; }
+        .nav-item { color: var(--gray); text-align: center; font-size: 11px; transition: 0.2s; }
+        .nav-item.active { color: #fff; font-weight: bold; }
+
+        #yt-engine { position: absolute; top: -1000px; left: -1000px; visibility: hidden; }
+    </style>
+</head>
+<body>
+
+<div id="auth-screen">
+    <div style="font-size: 60px; color: var(--accent); font-weight: 900; letter-spacing: -2px;">Notti</div>
+    <div style="color: var(--gray); margin-top: -10px; font-size: 14px;">Музыка без границ</div>
+    <button class="auth-btn" onclick="login()">Продолжить с Telegram</button>
+</div>
+
+<div id="yt-engine"></div>
+
+<div id="page-home" class="page active">
+    <h2 style="margin-top: 10px;">Для тебя</h2>
+    <div class="wave-card" onclick="startWave()">
+        <i class="fas fa-broadcast-tower"></i>
+        <div style="color:#fff; z-index:2;">
+            <div style="font-weight:900; font-size:20px;">Notti Радио</div>
+            <div style="font-size:12px; opacity:0.8;">Персональный поток на базе ИИ</div>
+        </div>
+        <i class="fas fa-radio wave-bg"></i>
+    </div>
+
+    <h3>Твои артисты</h3>
+    <div id="artists-list" class="artists-scroll"></div>
+
+    <h3 style="margin-top:25px;">Хиты дня</h3>
+    <div id="home-grid" class="grid"></div>
+</div>
+
+<div id="page-search" class="page">
+    <div style="position: sticky; top: 0; background: #000; padding: 10px 0; z-index: 10;">
+        <input type="text" id="searchInput" style="width:100%; padding:15px; border-radius:12px; background:#1a1a1a; color:#fff; border:1px solid #333; outline:none;" placeholder="Треки или исполнители...">
+    </div>
+    <div id="grid" class="grid" style="margin-top: 10px;"></div>
+</div>
+
+<div id="page-favs" class="page">
+    <h2>Любимое</h2>
+    <div id="fav-grid" class="grid"></div>
+</div>
+
+<div id="full-player">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <i class="fas fa-chevron-down" onclick="closeFull()" style="font-size:24px;"></i>
+        <span style="font-size:11px; letter-spacing:2px; font-weight:bold;">NOTTI PLAYER</span>
+        <i class="fas fa-ellipsis-h"></i>
+    </div>
+    
+    <img id="fp-img" class="fp-img" src="">
+    
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="overflow:hidden; flex:1; margin-right:15px;">
+            <div id="fp-title" style="font-size:24px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
+            <div id="fp-artist" style="color:var(--gray); font-size:18px;"></div>
+        </div>
+        <i id="fp-like-main" class="far fa-heart" style="font-size:28px;" onclick="toggleCurrentFav()"></i>
+    </div>
+
+    <input type="range" id="seek" style="width:100%; margin:40px 0 10px; accent-color:var(--accent);" value="0">
+    <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--gray); font-variant-numeric: tabular-nums;">
+        <span id="curT">0:00</span><span id="durT">0:00</span>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:40px;">
+        <i class="fas fa-random" style="color:var(--gray); font-size:20px;"></i>
+        <i class="fas fa-step-backward" style="font-size:32px;" onclick="player.seekTo(0)"></i>
+        <div style="width:75px; height:75px; background:#fff; color:#000; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:30px;" onclick="togglePlay()">
+            <i id="fp-play" class="fas fa-play"></i>
+        </div>
+        <i class="fas fa-step-forward" style="font-size:32px;" onclick="playNext()"></i>
+        <i class="fas fa-redo" style="color:var(--gray); font-size:20px;"></i>
+    </div>
+</div>
+
+<div id="mini-player" onclick="openFull()">
+    <img id="m-img" src="">
+    <div style="flex:1; overflow:hidden; margin-right: 10px;">
+        <div id="m-title" style="font-weight:bold; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
+    </div>
+    <i id="m-play" class="fas fa-play" style="font-size: 20px; padding: 10px;" onclick="event.stopPropagation(); togglePlay()"></i>
+</div>
+
+<div class="nav-bar">
+    <div class="nav-item active" onclick="showP('home', this)"><i class="fas fa-home" style="font-size:20px;"></i><br>Главная</div>
+    <div class="nav-item" onclick="showP('search', this)"><i class="fas fa-search" style="font-size:20px;"></i><br>Поиск</div>
+    <div class="nav-item" onclick="showP('favs', this)"><i class="fas fa-heart" style="font-size:20px;"></i><br>Лайки</div>
+</div>
+
 <script>
     const tg = window.Telegram.WebApp;
     const KEY = 'AIzaSyBYuWcCFDO-FPZXhK-AnIxw7nLGeGzwSHw';
     
-    // Получаем ID пользователя для уникального сохранения данных
-    const userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 'guest';
-    const userKeyFavs = `notti_favs_${userId}`;
-    const userKeyHist = `notti_history_${userId}`;
+    // ПРИВЯЗКА К ТЕЛЕГРАММУ
+    let userId = 'guest';
+    try {
+        tg.ready();
+        if(tg.initDataUnsafe && tg.initDataUnsafe.user) userId = tg.initDataUnsafe.user.id;
+    } catch(e) {}
+
+    const storageKeyFavs = `notti_favs_${userId}`;
+    const storageKeyHist = `notti_hist_${userId}`;
 
     let player, isPlaying = false, cur = null;
-    
-    // Загружаем данные конкретного пользователя
-    let favs = JSON.parse(localStorage.getItem(userKeyFavs) || '[]');
-    let history = JSON.parse(localStorage.getItem(userKeyHist) || '[]');
+    let favs = JSON.parse(localStorage.getItem(storageKeyFavs) || '[]');
+    let history = JSON.parse(localStorage.getItem(storageKeyHist) || '[]');
 
     function login() {
-        document.getElementById('auth-screen').style.display = 'none';
-        const userName = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.first_name : 'Друг';
+        document.getElementById('auth-screen').style.opacity = '0';
+        setTimeout(() => document.getElementById('auth-screen').style.display = 'none', 400);
         tg.HapticFeedback.notificationOccurred('success');
-        console.log("Авторизован как: " + userName);
+        search('2026 Hits', 'home-grid');
     }
 
-    // Сохранение данных (вызывать при каждом изменении)
-    function syncData() {
-        localStorage.setItem(userKeyFavs, JSON.stringify(favs));
-        localStorage.setItem(userKeyHist, JSON.stringify(history));
+    function onYouTubeIframeAPIReady() {
+        player = new YT.Player('yt-engine', {
+            events: { 
+                'onStateChange': (e) => { if(e.data == 0) playNext(); }, 
+                'onReady': () => setInterval(updateUI, 1000) 
+            }
+        });
     }
 
-    // Улучшенный поиск: Ищет и треки, и пытается найти артиста
     async function search(q, tid = 'grid') {
-        const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q)}&key=${KEY}&type=video&videoCategoryId=10&maxResults=12`);
-        const data = await res.json();
-        
-        // Если это поиск через инпут, добавим "карточку артиста" в начало
-        if(tid === 'grid' && data.items.length > 0) {
-            const first = data.items[0].snippet;
-            renderArtistCard(first.channelTitle, first.thumbnails.high.url);
-        }
-        
-        render(data.items, tid);
+        try {
+            const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q + ' official audio')}&key=${KEY}&type=video&videoCategoryId=10&maxResults=12`);
+            const data = await res.json();
+            
+            // Если поиск по артисту, рисуем карточку артиста
+            if(tid === 'grid' && data.items.length > 0) {
+                renderArtistCard(data.items[0].snippet.channelTitle, data.items[0].snippet.thumbnails.high.url);
+            }
+            
+            render(data.items, tid);
+        } catch(e) { console.log("Search error"); }
     }
 
     function renderArtistCard(name, img) {
         const g = document.getElementById('grid');
-        const card = `
-            <div style="grid-column: 1 / -1; display: flex; align-items: center; background: #1db95422; padding: 15px; border-radius: 15px; margin-bottom: 10px; border: 1px solid var(--accent);">
-                <img src="${img}" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 15px;">
-                <div>
-                    <div style="font-size: 10px; text-transform: uppercase; color: var(--accent);">Лучший результат</div>
-                    <div style="font-size: 18px; font-weight: bold;">${name}</div>
-                    <div style="font-size: 12px; color: var(--gray);">Исполнитель</div>
-                </div>
-            </div>
-        `;
+        const card = `<div style="grid-column: 1/-1; display:flex; align-items:center; background:#1db95422; padding:15px; border-radius:15px; margin-bottom:10px; border:1px solid var(--accent);">
+            <img src="${img}" style="width:65px; height:65px; border-radius:50%; object-fit:cover; margin-right:15px;">
+            <div><div style="font-size:10px; color:var(--accent);">АРТИСТ</div><div style="font-size:18px; font-weight:bold;">${name}</div></div>
+        </div>`;
         g.innerHTML = card + g.innerHTML;
     }
 
-    function saveArtist(name, img) {
+    function render(items, tid) {
+        const g = document.getElementById(tid); g.innerHTML = (tid === 'grid') ? g.innerHTML : '';
+        items.forEach(i => {
+            const t = { id: i.id.videoId, title: i.snippet.title, art: i.snippet.channelTitle, img: i.snippet.thumbnails.high.url };
+            g.innerHTML += `<div class="track-card" onclick="play('${t.id}','${t.title.replace(/'/g,"")}','${t.art}','${t.img}')">
+                <img src="${t.img}"><div style="padding:10px; font-size:12px; font-weight:600; line-height:1.2; height:40px; overflow:hidden;">${t.title}</div></div>`;
+        });
+    }
+
+    function play(id, title, art, img) {
+        cur = {id, title, art, img};
+        saveToHistory(art, img);
+        
+        document.getElementById('mini-player').style.display = 'flex';
+        document.getElementById('m-title').innerText = title;
+        document.getElementById('m-img').src = img;
+        document.getElementById('fp-title').innerText = title;
+        document.getElementById('fp-artist').innerText = art;
+        document.getElementById('fp-img').src = img;
+        
+        const isF = favs.find(f => f.id === id);
+        document.getElementById('fp-like-main').className = isF ? 'fas fa-heart' : 'far fa-heart';
+        document.getElementById('fp-like-main').style.color = isF ? 'var(--accent)' : '#fff';
+
+        player.loadVideoById(id); isPlaying = true; updateBtns();
+    }
+
+    function togglePlay() { 
+        if(isPlaying) player.pauseVideo(); else player.playVideo(); 
+        isPlaying = !isPlaying; 
+        updateBtns(); 
+    }
+
+    function updateBtns() { 
+        const icon = isPlaying ? 'fa-pause' : 'fa-play'; 
+        document.getElementById('m-play').className = 'fas ' + icon; 
+        document.getElementById('fp-play').className = 'fas ' + icon; 
+    }
+    
+    function playNext() { if(cur) search(cur.art + " official mix"); }
+
+    function updateUI() {
+        if(player && player.getCurrentTime) {
+            const c = player.getCurrentTime(), d = player.getDuration();
+            const s = document.getElementById('seek');
+            s.max = d; s.value = c;
+            document.getElementById('curT').innerText = fmt(c); document.getElementById('durT').innerText = fmt(d);
+        }
+    }
+
+    document.getElementById('seek').oninput = function() { player.seekTo(this.value); };
+    function fmt(s) { const m=Math.floor(s/60), r=Math.floor(s%60); return m+":"+(r<10?'0'+r:r); }
+
+    function saveToHistory(name, img) {
         if(!history.find(a => a.name === name)) {
             history.unshift({name, img});
             if(history.length > 10) history.pop();
-            syncData(); // Сохраняем в профиль пользователя
+            localStorage.setItem(storageKeyHist, JSON.stringify(history));
             renderArtists();
         }
     }
@@ -67,31 +272,35 @@
     function toggleCurrentFav() {
         if(!cur) return;
         const idx = favs.findIndex(f => f.id === cur.id);
-        if(idx > -1) {
-            favs.splice(idx, 1);
-        } else {
-            favs.push(cur);
-        }
-        syncData(); // Сохраняем в профиль пользователя
+        if(idx > -1) favs.splice(idx,1); else favs.push(cur);
+        localStorage.setItem(storageKeyFavs, JSON.stringify(favs));
         
         const isF = favs.find(f => f.id === cur.id);
-        const btn = document.getElementById('fp-like-main');
-        btn.className = isF ? 'fas fa-heart' : 'far fa-heart';
-        btn.style.color = isF ? 'var(--accent)' : '#fff';
+        document.getElementById('fp-like-main').className = isF ? 'fas fa-heart' : 'far fa-heart';
+        document.getElementById('fp-like-main').style.color = isF ? 'var(--accent)' : '#fff';
         tg.HapticFeedback.impactOccurred('light');
     }
 
-    // Остальные функции (play, togglePlay, showP) остаются без изменений, 
-    // так как они уже используют глобальные переменные favs и history,
-    // которые мы теперь привязали к Telegram ID при загрузке.
+    function renderArtists() {
+        const list = document.getElementById('artists-list'); list.innerHTML = '';
+        history.forEach(a => {
+            list.innerHTML += `<div class="artist-item" onclick="search('${a.name}')"><img src="${a.img}"><div class="artist-name">${a.name}</div></div>`;
+        });
+    }
 
-    window.onload = () => {
-        tg.expand();
-        // Если пользователь уже заходил, можно скрыть экран входа сразу
-        if (tg.initDataUnsafe.user) {
-            // document.getElementById('auth-screen').style.display = 'none'; // Раскомментируй, если хочешь авто-вход
-        }
-        renderArtists();
-        search('Top ru charts 2026', 'home-grid');
-    };
+    function showP(p, el) {
+        document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+        document.getElementById('page-'+p).classList.add('active');
+        document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+        el.classList.add('active');
+        if(p==='favs') render(favs.map(f => ({id:{videoId:f.id}, snippet:{title:f.title, channelTitle:f.art, thumbnails:{high:{url:f.img}}}})), 'fav-grid');
+    }
+
+    function openFull() { document.getElementById('full-player').classList.add('open'); }
+    function closeFull() { document.getElementById('full-player').classList.remove('open'); }
+
+    document.getElementById('searchInput').onkeypress = (e) => { if(e.key==='Enter') { search(e.target.value); e.target.blur(); } };
+    window.onload = () => { tg.expand(); renderArtists(); };
 </script>
+</body>
+</html>
