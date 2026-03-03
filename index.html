@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Notti Player</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            background: #0f0f12;
+            color: white;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .player-card {
+            background: #1a1a1f;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+            width: 80%;
+        }
+        .cover {
+            width: 100%;
+            aspect-ratio: 1;
+            background: linear-gradient(45deg, #6200ea, #03dac6);
+            border-radius: 15px;
+            margin-bottom: 15px;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+        button {
+            background: none;
+            border: 1px solid #333;
+            color: white;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="player-card">
+        <div class="cover"></div>
+        <div id="track-name">Загрузка музыки...</div>
+        <div style="font-size: 0.8em; color: #888;">NottiCloud Bot</div>
+        <div class="controls">
+            <button>⏮</button>
+            <button style="font-size: 1.5em;">▶️</button>
+            <button>⏭</button>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Развернуть на весь экран
+    </script>
+</body>
+</html>
