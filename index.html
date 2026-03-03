@@ -15,20 +15,18 @@
         .page { display: none; height: 100vh; padding: 20px 20px 160px; overflow-y: auto; }
         .page.active { display: block; }
 
-        /* NOTTI РАДИО (ОБНОВЛЕНО) */
         .wave-card { width: 100%; height: 120px; background: linear-gradient(135deg, #1db954, #004d1a); border-radius: 15px; display: flex; align-items: center; padding: 20px; margin-bottom: 25px; cursor: pointer; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
         .wave-card i { font-size: 40px; color: #fff; margin-right: 15px; z-index: 2; text-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .wave-bg { position: absolute; right: -10px; bottom: -20px; font-size: 120px; color: rgba(255,255,255,0.05); transform: rotate(-10deg); }
 
-        /* ОСТАЛЬНОЙ ДИЗАЙН БЕЗ ИЗМЕНЕНИЙ */
         .artists-scroll { display: flex; gap: 15px; overflow-x: auto; padding: 10px 0; scrollbar-width: none; }
         .artists-scroll::-webkit-scrollbar { display: none; }
-        .artist-item { min-width: 80px; text-align: center; }
+        .artist-item { min-width: 80px; text-align: center; cursor: pointer; }
         .artist-item img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid #222; }
         .artist-name { font-size: 11px; margin-top: 5px; color: var(--gray); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .track-card { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid #222; position: relative; }
+        .track-card { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid #222; position: relative; cursor: pointer; }
         .track-card img { width: 100%; aspect-ratio: 1/1; object-fit: cover; }
 
         #full-player { position: fixed; top: 100%; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; transition: 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); padding: 40px 25px; display: flex; flex-direction: column; }
@@ -36,15 +34,16 @@
         .fp-img { width: 100%; aspect-ratio: 1/1; border-radius: 15px; margin: 30px 0; object-fit: cover; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
 
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: space-around; padding: 15px 0 35px; z-index: 1000; backdrop-filter: blur(15px); }
-        .nav-item { color: var(--gray); text-align: center; font-size: 10px; }
+        .nav-item { color: var(--gray); text-align: center; font-size: 10px; cursor: pointer; }
         .nav-item.active { color: #fff; }
 
-        #yt-engine { position: absolute; top: -1000px; }
+        /* Скрытый контейнер плеера */
+        #yt-player-container { position: absolute; top: -9999px; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
     </style>
 </head>
 <body>
 
-<div id="yt-engine"></div>
+<div id="yt-player-container"><div id="yt-engine"></div></div>
 
 <div id="page-home" class="page active">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
@@ -80,7 +79,7 @@
 
 <div id="full-player">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <i class="fas fa-chevron-down" onclick="closeFull()" style="font-size:20px;"></i>
+        <i class="fas fa-chevron-down" onclick="closeFull()" style="font-size:20px; cursor:pointer;"></i>
         <span style="font-size:10px; letter-spacing:1px; color:var(--gray);">NOTTI PLAYER</span>
         <i class="fas fa-ellipsis-v"></i>
     </div>
@@ -92,26 +91,26 @@
             <div id="fp-title" style="font-size:22px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
             <div id="fp-artist" style="color:var(--gray); font-size:16px;"></div>
         </div>
-        <i id="fp-like-main" class="far fa-heart" style="font-size:24px;" onclick="toggleCurrentFav()"></i>
+        <i id="fp-like-main" class="far fa-heart" style="font-size:24px; cursor:pointer;" onclick="toggleCurrentFav()"></i>
     </div>
 
-    <input type="range" id="seek" style="width:100%; margin:30px 0 10px; accent-color:#1DB954;" value="0">
+    <input type="range" id="seek" style="width:100%; margin:30px 0 10px; accent-color:#1DB954;" value="0" min="0" step="1">
     <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--gray);">
         <span id="curT">0:00</span><span id="durT">0:00</span>
     </div>
 
     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:30px;">
         <i class="fas fa-random" style="color:var(--gray); font-size:18px;"></i>
-        <i class="fas fa-step-backward" style="font-size:28px;" onclick="player.seekTo(0)"></i>
-        <div style="width:65px; height:65px; background:#fff; color:#000; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:26px;" onclick="togglePlay()">
+        <i class="fas fa-step-backward" style="font-size:28px; cursor:pointer;" onclick="player.seekTo(0)"></i>
+        <div style="width:65px; height:65px; background:#fff; color:#000; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:26px; cursor:pointer;" onclick="togglePlay()">
             <i id="fp-play" class="fas fa-play"></i>
         </div>
-        <i class="fas fa-step-forward" style="font-size:28px;" onclick="playNext()"></i>
+        <i class="fas fa-step-forward" style="font-size:28px; cursor:pointer;" onclick="playNext()"></i>
         <i class="fas fa-redo" style="color:var(--gray); font-size:18px;"></i>
     </div>
 </div>
 
-<div id="mini-player" style="position:fixed; bottom:95px; left:10px; right:10px; height:55px; background:#282828; border-radius:8px; display:none; align-items:center; padding:0 10px; z-index:2000;" onclick="openFull()">
+<div id="mini-player" style="position:fixed; bottom:95px; left:10px; right:10px; height:55px; background:#282828; border-radius:8px; display:none; align-items:center; padding:0 10px; z-index:2000; cursor:pointer;" onclick="openFull()">
     <img id="m-img" style="width:38px; height:38px; border-radius:4px; margin-right:12px;">
     <div style="flex:1; overflow:hidden;"><div id="m-title" style="font-weight:bold; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div></div>
     <i id="m-play" class="fas fa-play" style="padding:10px;" onclick="event.stopPropagation(); togglePlay()"></i>
@@ -125,15 +124,38 @@
 
 <script>
     const tg = window.Telegram.WebApp;
-    const KEY = 'AIzaSyBYuWcCFDO-FPZXhK-AnIxw7nLGeGzwSHw';
+    const KEY = 'AIzaSyBYuWcCFDO-FPZXhK-AnIxw7nLGeGzwSHw'; // Твой ключ
     let player, isPlaying = false, cur = null;
     let favs = JSON.parse(localStorage.getItem('notti_favs')||'[]');
     let history = JSON.parse(localStorage.getItem('notti_history')||'[]');
 
+    // YouTube Player Initialization
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('yt-engine', {
-            events: { 'onStateChange': (e) => { if(e.data==0) playNext(); }, 'onReady': () => setInterval(updateUI, 1000) }
+            height: '1',
+            width: '1',
+            playerVars: { 'autoplay': 1, 'controls': 0, 'playsinline': 1 },
+            events: {
+                'onReady': onPlayerReady,
+                'onStateChange': onPlayerStateChange
+            }
         });
+    }
+
+    function onPlayerReady(event) {
+        setInterval(updateUI, 500);
+    }
+
+    function onPlayerStateChange(event) {
+        if (event.data == YT.PlayerState.PLAYING) {
+            isPlaying = true;
+            updateBtns();
+        } else if (event.data == YT.PlayerState.PAUSED) {
+            isPlaying = false;
+            updateBtns();
+        } else if (event.data == YT.PlayerState.ENDED) {
+            playNext();
+        }
     }
 
     async function startWave() {
@@ -165,14 +187,17 @@
     }
 
     async function search(q, tid = 'grid') {
-        const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q + ' official audio')}&key=${KEY}&type=video&videoCategoryId=10&maxResults=10`);
-        const data = await res.json();
-        render(data.items, tid);
+        try {
+            const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q + ' official audio')}&key=${KEY}&type=video&videoCategoryId=10&maxResults=10`);
+            const data = await res.json();
+            if(data.items) render(data.items, tid);
+        } catch (e) { console.error("Search error", e); }
     }
 
     function render(items, tid) {
         const g = document.getElementById(tid); g.innerHTML = '';
         items.forEach(i => {
+            if(!i.id.videoId) return;
             const t = { id: i.id.videoId, title: i.snippet.title, art: i.snippet.channelTitle, img: i.snippet.thumbnails.high.url };
             g.innerHTML += `<div class="track-card" onclick="play('${t.id}','${t.title.replace(/'/g,"")}','${t.art}','${t.img}')">
                 <img src="${t.img}"><div style="padding:10px; font-size:11px; font-weight:bold; height:36px; overflow:hidden;">${t.title}</div></div>`;
@@ -182,40 +207,66 @@
     function play(id, title, art, img) {
         cur = {id, title, art, img};
         saveArtist(art, img);
+        
         document.getElementById('mini-player').style.display = 'flex';
         document.getElementById('m-title').innerText = title;
         document.getElementById('m-img').src = img;
+        
         document.getElementById('fp-title').innerText = title;
         document.getElementById('fp-artist').innerText = art;
         document.getElementById('fp-img').src = img;
         
         const isF = favs.find(f => f.id === id);
-        document.getElementById('fp-like-main').className = isF ? 'fas fa-heart' : 'far fa-heart';
-        document.getElementById('fp-like-main').style.color = isF ? '#1DB954' : '#fff';
+        const likeBtn = document.getElementById('fp-like-main');
+        likeBtn.className = isF ? 'fas fa-heart' : 'far fa-heart';
+        likeBtn.style.color = isF ? '#1DB954' : '#fff';
 
-        player.loadVideoById(id); isPlaying = true; updateBtns();
+        player.loadVideoById(id);
+        isPlaying = true;
+        updateBtns();
     }
 
-    function togglePlay() { if(isPlaying) player.pauseVideo(); else player.playVideo(); isPlaying=!isPlaying; updateBtns(); }
-    function updateBtns() { 
-        const i = isPlaying ? 'fa-pause' : 'fa-play'; 
-        document.getElementById('m-play').className = 'fas '+i; 
-        document.getElementById('fp-play').className = 'fas '+i; 
-    }
-    
-    function playNext() { if(cur) search(cur.art + " official"); }
-
-    function updateUI() {
-        if(player && player.getCurrentTime) {
-            const c = player.getCurrentTime(), d = player.getDuration();
-            const s = document.getElementById('seek');
-            s.max = d; s.value = c;
-            document.getElementById('curT').innerText = fmt(c); document.getElementById('durT').innerText = fmt(d);
+    function togglePlay() {
+        if(!player) return;
+        if(isPlaying) {
+            player.pauseVideo();
+        } else {
+            player.playVideo();
         }
     }
 
-    document.getElementById('seek').oninput = function() { player.seekTo(this.value); };
-    function fmt(s) { const m=Math.floor(s/60), r=Math.floor(s%60); return m+":"+(r<10?'0'+r:r); }
+    function updateBtns() { 
+        const icon = isPlaying ? 'fa-pause' : 'fa-play'; 
+        document.getElementById('m-play').className = 'fas ' + icon; 
+        document.getElementById('fp-play').className = 'fas ' + icon; 
+    }
+    
+    function playNext() { 
+        if(cur) search(cur.art + " official random"); 
+    }
+
+    function updateUI() {
+        if(player && player.getCurrentTime && player.getDuration) {
+            const c = player.getCurrentTime();
+            const d = player.getDuration();
+            if(d > 0) {
+                const s = document.getElementById('seek');
+                s.max = Math.floor(d);
+                s.value = Math.floor(c);
+                document.getElementById('curT').innerText = fmt(c);
+                document.getElementById('durT').innerText = fmt(d);
+            }
+        }
+    }
+
+    document.getElementById('seek').oninput = function() { 
+        if(player) player.seekTo(this.value); 
+    };
+
+    function fmt(s) { 
+        const m = Math.floor(s/60), r = Math.floor(s%60); 
+        return m + ":" + (r < 10 ? '0' + r : r); 
+    }
 
     function toggleCurrentFav() {
         if(!cur) return;
@@ -223,8 +274,9 @@
         if(idx > -1) favs.splice(idx,1); else favs.push(cur);
         localStorage.setItem('notti_favs', JSON.stringify(favs));
         const isF = favs.find(f => f.id === cur.id);
-        document.getElementById('fp-like-main').className = isF ? 'fas fa-heart' : 'far fa-heart';
-        document.getElementById('fp-like-main').style.color = isF ? '#1DB954' : '#fff';
+        const likeBtn = document.getElementById('fp-like-main');
+        likeBtn.className = isF ? 'fas fa-heart' : 'far fa-heart';
+        likeBtn.style.color = isF ? '#1DB954' : '#fff';
         tg.HapticFeedback.impactOccurred('light');
     }
 
@@ -233,14 +285,21 @@
         document.getElementById('page-'+p).classList.add('active');
         document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
         el.classList.add('active');
-        if(p==='favs') render(favs.map(f => ({id: f.id, snippet: {title: f.title, channelTitle: f.art, thumbnails: {high: {url: f.img}}}})), 'fav-grid');
+        if(p==='favs') render(favs.map(f => ({id: {videoId: f.id}, snippet: {title: f.title, channelTitle: f.art, thumbnails: {high: {url: f.img}}}})), 'fav-grid');
     }
 
     function openFull() { document.getElementById('full-player').classList.add('open'); }
     function closeFull() { document.getElementById('full-player').classList.remove('open'); }
 
-    document.getElementById('searchInput').onkeypress = (e) => { if(e.key==='Enter') { search(e.target.value); e.target.blur(); } };
-    window.onload = () => { tg.expand(); renderArtists(); search('Popular Artists 2026', 'home-grid'); };
+    document.getElementById('searchInput').onkeypress = (e) => { 
+        if(e.key==='Enter') { search(e.target.value); e.target.blur(); } 
+    };
+
+    window.onload = () => { 
+        tg.expand(); 
+        renderArtists(); 
+        search('Top Global Hits 2026', 'home-grid'); 
+    };
 </script>
 </body>
 </html>
