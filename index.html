@@ -3,130 +3,244 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Notti Music 2.0</title>
+    <title>Notti Music Pro</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --accent: #ff2d55; --bg: #000; --card: #1c1c1e; }
+        :root { --accent: #1DB954; --bg: #000; --card: #121212; --gray: #b3b3b3; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: white; font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 20px; overflow-x: hidden; }
+        body { background: var(--bg); color: #fff; font-family: -apple-system, sans-serif; margin: 0; padding: 0; overflow: hidden; }
 
-        /* Поиск */
-        .header { position: sticky; top: 0; background: var(--bg); z-index: 100; padding-bottom: 15px; }
-        #searchInput { width: 100%; padding: 14px 20px; border-radius: 12px; border: none; background: var(--card); color: white; font-size: 17px; font-weight: 500; }
+        /* АНИМАЦИИ КНОПОК */
+        .btn-anim:active { transform: scale(0.9); transition: 0.1s; }
+        .nav-item:active { transform: scale(0.85); }
 
-        /* Сетка треков */
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
-        .track-card { background: var(--card); border-radius: 14px; overflow: hidden; transition: transform 0.2s; }
-        .track-card:active { transform: scale(0.96); }
-        .track-card img { width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block; }
-        .track-info { padding: 10px; }
-        .track-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .track-artist { font-size: 12px; color: #8e8e93; margin-top: 3px; }
+        /* НАВИГАЦИЯ */
+        .page { display: none; height: 100vh; padding: 20px 20px 160px; overflow-y: auto; }
+        .page.active { display: block; }
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: space-around; padding: 15px 0 30px; z-index: 1000; backdrop-filter: blur(10px); }
+        .nav-item { color: var(--gray); text-align: center; font-size: 10px; cursor: pointer; }
+        .nav-item.active { color: #fff; }
+        .nav-item i { font-size: 22px; display: block; margin-bottom: 5px; }
 
-        /* Плеер (Apple Style) */
-        #player-ui { position: fixed; bottom: 20px; left: 15px; right: 15px; height: 64px; background: rgba(44, 44, 46, 0.95); backdrop-filter: blur(20px); border-radius: 14px; display: none; align-items: center; padding: 0 15px; z-index: 1000; box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
-        #player-ui img { width: 44px; height: 44px; border-radius: 6px; margin-right: 12px; }
-        .p-text { flex: 1; overflow: hidden; }
-        .p-title { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .p-controls { display: flex; align-items: center; gap: 20px; }
-        .p-play { font-size: 24px; color: white; width: 30px; text-align: center; }
+        /* ПОИСК И ПЛИТКИ */
+        .search-input { width: 100%; padding: 15px; border-radius: 10px; border: none; background: #282828; color: #fff; font-size: 16px; margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .track-card { background: var(--card); border-radius: 12px; overflow: hidden; position: relative; border: 1px solid #222; }
+        .track-card img { width: 100%; aspect-ratio: 1/1; object-fit: cover; }
+        .like-icon { position: absolute; top: 10px; right: 10px; font-size: 20px; color: rgba(255,255,255,0.5); text-shadow: 0 2px 5px #000; }
+        .like-icon.active { color: var(--accent); }
 
-        /* Скрытый движок */
-        #yt-engine { position: absolute; top: -1000px; opacity: 0; }
-        .loading { text-align: center; padding: 40px; color: var(--accent); display: none; }
+        /* БОЛЬШОЙ ПЛЕЕР */
+        #full-player { position: fixed; top: 100%; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, #1e1e1e, #000); z-index: 5000; transition: 0.4s cubic-bezier(0.25, 1, 0.5, 1); padding: 40px 30px; display: flex; flex-direction: column; align-items: center; }
+        #full-player.open { top: 0; }
+        .fp-close { position: absolute; top: 20px; left: 20px; font-size: 24px; }
+        .fp-img { width: 100%; aspect-ratio: 1/1; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.7); margin: 40px 0; }
+        .fp-info { width: 100%; text-align: left; }
+        .fp-title { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
+        .fp-artist { color: var(--gray); font-size: 18px; }
+        
+        /* ПЕРЕМОТКА */
+        .fp-seek-bar { width: 100%; margin: 30px 0 10px; -webkit-appearance: none; background: #444; height: 4px; border-radius: 2px; }
+        .fp-seek-bar::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: #fff; border-radius: 50%; }
+        .fp-time { width: 100%; display: flex; justify-content: space-between; font-size: 12px; color: var(--gray); }
+
+        .fp-controls { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-top: 30px; }
+        .fp-play-btn { width: 70px; height: 70px; background: #fff; color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; }
+
+        /* МИНИ ПЛЕЕР */
+        .mini-player { position: fixed; bottom: 85px; left: 10px; right: 10px; height: 60px; background: #282828; border-radius: 10px; display: none; align-items: center; padding: 0 10px; z-index: 2000; }
+        .mini-player img { width: 40px; height: 40px; border-radius: 5px; margin-right: 12px; }
+
+        #yt-engine { position: absolute; top: -1000px; }
     </style>
 </head>
 <body>
 
 <div id="yt-engine"></div>
 
-<div class="header">
-    <h1 style="font-size: 34px; margin: 0 0 15px;">Поиск</h1>
-    <input type="text" id="searchInput" placeholder="Артист, песня или альбом">
+<div id="page-search" class="page active">
+    <input type="text" id="searchInput" class="search-input" placeholder="Поиск музыки...">
+    <div id="grid" class="grid"></div>
 </div>
 
-<div id="loader" class="loading"><i class="fas fa-spinner fa-spin fa-2x"></i></div>
-<div id="grid" class="grid"></div>
+<div id="page-favorites" class="page">
+    <h1 style="font-size: 32px; margin-bottom: 20px;">Избранное</h1>
+    <div id="fav-grid" class="grid"></div>
+</div>
 
-<div id="player-ui">
-    <img id="p-img" src="">
-    <div class="p-text">
-        <div id="p-name" class="p-title">Название</div>
-        <div style="font-size: 12px; color: #8e8e93;">Сейчас играет</div>
+<div id="page-settings" class="page">
+    <h1 style="font-size: 32px;">Настройки</h1>
+    <p style="color:var(--gray)">Версия 2.0. Плеер готов.</p>
+</div>
+
+<div id="full-player">
+    <i class="fas fa-chevron-down fp-close btn-anim" onclick="closeFullPlayer()"></i>
+    <img id="fp-img" class="fp-img" src="">
+    <div class="fp-info">
+        <div id="fp-title" class="fp-title">Название трека</div>
+        <div id="fp-artist" class="fp-artist">Исполнитель</div>
     </div>
-    <div class="p-controls">
-        <div onclick="togglePlay()"><i id="p-icon" class="fas fa-play p-play"></i></div>
+    
+    <input type="range" id="seekBar" class="fp-seek-bar" value="0" step="1">
+    <div class="fp-time">
+        <span id="currentTime">0:00</span>
+        <span id="durationTime">0:00</span>
     </div>
+
+    <div class="fp-controls">
+        <i class="fas fa-random btn-anim" style="font-size: 20px; color: var(--gray)"></i>
+        <i class="fas fa-step-backward btn-anim" style="font-size: 30px;"></i>
+        <div class="fp-play-btn btn-anim" onclick="togglePlay()"><i id="fp-play-icon" class="fas fa-play"></i></div>
+        <i class="fas fa-step-forward btn-anim" style="font-size: 30px;" onclick="playNext()"></i>
+        <i class="fas fa-redo btn-anim" style="font-size: 20px; color: var(--gray)"></i>
+    </div>
+</div>
+
+<div class="mini-player" id="mini-player" onclick="openFullPlayer()">
+    <img id="m-img" src="">
+    <div style="flex: 1; overflow: hidden;">
+        <div id="m-title" style="font-weight: bold; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Трек</div>
+        <div id="m-artist" style="font-size: 11px; color: var(--gray);">Артист</div>
+    </div>
+    <div onclick="event.stopPropagation(); togglePlay()" class="btn-anim" style="padding: 10px;">
+        <i id="m-play-icon" class="fas fa-play" style="font-size: 20px;"></i>
+    </div>
+</div>
+
+<div class="nav-bar">
+    <div class="nav-item active" onclick="showPage('search', this)"><i class="fas fa-search"></i>Поиск</div>
+    <div class="nav-item" onclick="showPage('favorites', this)"><i class="fas fa-heart"></i>Избранное</div>
+    <div class="nav-item" onclick="showPage('settings', this)"><i class="fas fa-cog"></i>Настройки</div>
 </div>
 
 <script>
     const tg = window.Telegram.WebApp;
     const API_KEY = 'AIzaSyBYuWcCFDO-FPZXhK-AnIxw7nLGeGzwSHw';
-    let player, isPlaying = false;
+    let ytPlayer, isPlaying = false, currentTrack = null, favorites = JSON.parse(localStorage.getItem('favs') || '[]');
 
-    // Инициализация YouTube
     function onYouTubeIframeAPIReady() {
-        player = new YT.Player('yt-engine', {
+        ytPlayer = new YT.Player('yt-engine', {
             height: '0', width: '0',
             events: { 
-                'onStateChange': (e) => {
-                    isPlaying = (e.data === YT.PlayerState.PLAYING);
-                    document.getElementById('p-icon').className = isPlaying ? 'fas fa-pause p-play' : 'fas fa-play p-play';
-                },
-                'onError': () => alert('Ошибка воспроизведения. Попробуйте другой трек.')
+                'onStateChange': onPlayerStateChange,
+                'onReady': () => setInterval(updateSeekBar, 1000)
             }
         });
     }
 
+    // ПОИСК
     async function search(q) {
         if (!q) return;
-        document.getElementById('loader').style.display = 'block';
-        const grid = document.getElementById('grid');
-        grid.innerHTML = '';
-
-        try {
-            const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q + ' music')}&key=${API_KEY}&type=video&maxResults=12`);
-            const data = await res.json();
-            
-            data.items.forEach(item => {
-                const vid = item.id.videoId;
-                const title = item.snippet.title;
-                const thumb = item.snippet.thumbnails.high.url;
-                const channel = item.snippet.channelTitle;
-
-                grid.innerHTML += `
-                    <div class="track-card" onclick="playMusic('${vid}', '${title.replace(/'/g, "")}', '${thumb}')">
-                        <img src="${thumb}">
-                        <div class="track-info">
-                            <div class="track-title">${title}</div>
-                            <div class="track-artist">${channel}</div>
-                        </div>
-                    </div>`;
-            });
-        } catch (e) { alert('Лимит поиска исчерпан или нет сети'); }
-        document.getElementById('loader').style.display = 'none';
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q)}&key=${API_KEY}&type=video&maxResults=10`);
+        const data = await res.json();
+        renderGrid(data.items, 'grid');
     }
 
-    function playMusic(id, title, img) {
-        document.getElementById('player-ui').style.display = 'flex';
-        document.getElementById('p-name').innerText = title;
-        document.getElementById('p-img').src = img;
+    function renderGrid(items, targetId) {
+        const grid = document.getElementById(targetId);
+        grid.innerHTML = '';
+        items.forEach(item => {
+            const track = {
+                id: item.id.videoId || item.id,
+                title: item.snippet.title,
+                artist: item.snippet.channelTitle,
+                img: item.snippet.thumbnails.high.url
+            };
+            const isFav = favorites.find(f => f.id === track.id);
+            grid.innerHTML += `
+                <div class="track-card btn-anim" onclick="playMusic('${track.id}', '${track.title.replace(/'/g,"")}', '${track.artist}', '${track.img}')">
+                    <img src="${track.img}">
+                    <i class="fas fa-heart like-icon ${isFav?'active':''}" onclick="event.stopPropagation(); toggleFav(this, '${track.id}', '${track.title.replace(/'/g,"")}', '${track.artist}', '${track.img}')"></i>
+                    <div style="padding:10px; font-size:12px; font-weight:bold;">${track.title.substring(0,30)}</div>
+                </div>`;
+        });
+    }
+
+    // УПРАВЛЕНИЕ МУЗЫКОЙ
+    function playMusic(id, title, artist, img) {
+        currentTrack = {id, title, artist, img};
+        document.getElementById('mini-player').style.display = 'flex';
+        document.getElementById('m-title').innerText = title;
+        document.getElementById('m-artist').innerText = artist;
+        document.getElementById('m-img').src = img;
         
-        player.loadVideoById(id);
+        document.getElementById('fp-title').innerText = title;
+        document.getElementById('fp-artist').innerText = artist;
+        document.getElementById('fp-img').src = img;
+
+        ytPlayer.loadVideoById(id);
+        isPlaying = true;
         tg.HapticFeedback.impactOccurred('medium');
     }
 
     function togglePlay() {
-        if (isPlaying) player.pauseVideo(); else player.playVideo();
+        if (isPlaying) ytPlayer.pauseVideo(); else ytPlayer.playVideo();
+        isPlaying = !isPlaying;
+        const icon = isPlaying ? 'fa-pause' : 'fa-play';
+        document.getElementById('m-play-icon').className = 'fas ' + icon;
+        document.getElementById('fp-play-icon').className = 'fas ' + icon;
     }
+
+    function onPlayerStateChange(e) {
+        if (e.data === 0) playNext(); // Авто-переключение
+    }
+
+    function playNext() {
+        if (currentTrack) search(currentTrack.artist + " similar"); 
+        tg.HapticFeedback.notificationOccurred('success');
+    }
+
+    // ПЕРЕМОТКА
+    function updateSeekBar() {
+        if (ytPlayer && ytPlayer.getCurrentTime) {
+            const cur = ytPlayer.getCurrentTime();
+            const dur = ytPlayer.getDuration();
+            const seek = document.getElementById('seekBar');
+            seek.max = dur;
+            seek.value = cur;
+            document.getElementById('currentTime').innerText = formatTime(cur);
+            document.getElementById('durationTime').innerText = formatTime(dur);
+        }
+    }
+
+    document.getElementById('seekBar').oninput = function() {
+        ytPlayer.seekTo(this.value);
+    };
+
+    function formatTime(s) {
+        const m = Math.floor(s/60);
+        const sec = Math.floor(s%60);
+        return m + ":" + (sec < 10 ? '0'+sec : sec);
+    }
+
+    // ИЗБРАННОЕ И НАВИГАЦИЯ
+    function toggleFav(el, id, title, artist, img) {
+        el.classList.toggle('active');
+        const idx = favorites.findIndex(f => f.id === id);
+        if (idx > -1) favorites.splice(idx, 1);
+        else favorites.push({id, title, artist, img});
+        localStorage.setItem('favs', JSON.stringify(favorites));
+        tg.HapticFeedback.impactOccurred('light');
+    }
+
+    function showPage(pageId, el) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('page-' + pageId).classList.add('active');
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        el.classList.add('active');
+        if(pageId === 'favorites') renderGrid(favorites.map(f => ({id: f.id, snippet: {title: f.title, channelTitle: f.artist, thumbnails: {high: {url: f.img}}}})), 'fav-grid');
+    }
+
+    function openFullPlayer() { document.getElementById('full-player').classList.add('open'); }
+    function closeFullPlayer() { document.getElementById('full-player').classList.remove('open'); }
 
     document.getElementById('searchInput').onkeypress = (e) => {
         if (e.key === 'Enter') { search(e.target.value); e.target.blur(); }
     };
 
-    window.onload = () => { tg.expand(); search('Hits 2024'); };
+    window.onload = () => { tg.expand(); search('Pop Hits 2026'); };
 </script>
 </body>
 </html>
