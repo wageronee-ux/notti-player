@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "yt-search": "^2.10.3"
+    "yt-search": "^2.10.3",
+    "@upstash/redis": "^1.28.0"
   }
 }
